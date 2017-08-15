@@ -1,0 +1,292 @@
+% !TEX TS-program = LuaLaTeX
+% !TEX encoding = UTF-8 Unicode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Option for language settings and equations adjusment,
+%% http://www.tug.org/texlive/Contents/live/texmf-dist/doc/fonts/bera/bera.txt
+\documentclass[swedish, english, 11pt ]{article}
+\usepackage{babel}
+\usepackage[T1]{fontenc}
+% Makes utf8 in pdf mode
+\usepackage[utf8]{luainputenc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{stackrel}
+\usepackage[leqno]{amsmath}
+\usepackage{lualatex-math}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{lastpage}
+\usepackage{multirow}
+\usepackage{arydshln}
+\usepackage{longtable}
+\usepackage{dcolumn}
+\usepackage{enumitem}
+\setlist[enumerate]{ topsep=1em,itemsep=0.8em, itemindent=0.5em, 
+  labelsep=0.7em, labelindent=\parindent, leftmargin=* }
+% For boxes and other stuff inside align and equations
+% begin{empheq}[ box = \fbox]{align*} ... \end{empheq}                                                
+\usepackage{empheq} 
+\newcommand*\textfbox[2][Title]{%
+  \begin{tabular}[b]{@{}c@{}}#1\\\fbox{#2}\end{tabular}}
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addto\captionsenglish{\renewcommand{\figurename}{Figur}}
+\addto\captionsenglish{\renewcommand{\contentsname}{Innehållsförteckning}}
+\addto\captionsenglish{\renewcommand{\tablename}{Tabell}}
+\addto\captionsenglish{\renewcommand{\listfigurename}{Figurförteckning}}
+\addto\captionsenglish{\renewcommand{\listtablename}{Tabellförteckning}}
+%% Change name of bibliograph, when cite{} is used
+\addto\captionsenglish{\renewcommand{\bibname}{Referenser}}
+
+\usepackage{booktabs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%footmisc controls the footnotes
+\usepackage[bottom, flushmargin, hang, multiple]{footmisc}
+\setlength{\footnotemargin}{3.5mm}
+\usepackage{eurosym}
+
+
+\usepackage{pdflscape}
+%% \begin{landscape}...\end{landscape}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Macros used in the paper, the [2] means number of arguments used in
+%% the macro. Amsthm is package for Theorem
+\usepackage{acronym}
+
+%%\renewcommand{\setthesubsection}{\arabic{subsection}}
+\newcommand{\email}[1]{{\normalfont\texttt{#1}}}
+\newcommand{\code}[1]{\mbox{\texttt{#1}}}
+\newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\newcommand{\proglang}[1]{\textsf{#1}}
+\newcommand{\sign}[1]{\ensuremath{\text{\textsf{#1}}}}
+\newcommand{\HRule}[1]{\rule{#1}{0.5mm}}
+\newcommand{\R}{\proglang{R}\, }
+\newcommand{\D}{\pkg{data.table()}\,}
+\newcommand{\CC}[1]{\code{#1()}\,}
+\newcommand{\tb}[1]{\textbf{#1}}
+\newcommand{\un}[1]{\textsc{#1}}
+\newcommand{\unn}[1]{\underline{\textit{\scalebox{1.4}{#1}}}}
+\newcommand{\fullref}[1]{\ref{#1} (se sida~\pageref{#1})}
+%% These codes are used in this document a lot
+\newcommand{\inputy}[1]{\input{#1}\unskip}
+% For variables, $\var{1}{2}$
+\newcommand{\var}[2]{\ensuremath{\textbf{#1}_{#2} }}
+\newcommand{\vars}[2]{\ensuremath{\textsf{#1}_{\textrm{#2}}}}
+\usepackage{verbatim}
+\newcommand\codeHighlight[1]{\textcolor[rgb]{1,0,0}{\textbf{#1}}}
+\newcommand{\textRM}[1]{\textrm{{\scriptsize #1}}}
+
+% Command för index
+\DeclareRobustCommand{\EX}[2][{\sign{E}}]{\ensuremath{#1}\left[{#2}\right]}
+\DeclareRobustCommand{\EV}[2][{\sign{V}}]{\ensuremath{#1}\left[{#2}\right]}
+\DeclareRobustCommand{\EM}[2][{\sign{M}}]{\ensuremath{#1}\left[{#2}\right]}
+\DeclareRobustCommand{\IF}[2][{\sign{IF}}]{\ensuremath{#1}\left[{#2}\right]}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Control over caption and subfig
+
+%% Options for fancy heading, section layout
+ % Layout options
+\usepackage{etoolbox} %ifstrequal etc
+\usepackage{tikz}
+\usetikzlibrary{shapes,shadows,calc}
+\pgfdeclareimage[width = 0.1\paperwidth]{kriita}{Logo/paylevo.png}
+%% 1125/1400*0.95
+\IfFileExists{Logo/paylevo.png}
+{
+\pgfdeclareimage[width = 0.95\paperwidth]{core}{Logo/paylevo.png}
+} {
+\pgfdeclareimage[width = 0.6\paperwidth]{core}{../Logo/paylevo1.png}
+}
+\newcommand\SecTitle[4]{% can use \hspace*{-1.5}
+
+\begin{tikzpicture}
+  \node[inner xsep=0pt,minimum height=3cm,text width=1\textwidth,
+      align=left,left color=gray,  right color=white, signal to=#1,font=\Huge,anchor=#2] 
+          at (#3,0) {\hspace*{0.25\textwidth}\textsf{#4}};
+\end{tikzpicture}%
+}
+
+
+\newcommand\SecTitleSub[4]{%
+\begin{tikzpicture}
+  \node[inner xsep=0pt,minimum height=1.5cm,text width=0.95\textwidth,
+      align=left,left color=gray, right color=white, signal to=#1,font=\huge,anchor=#2] 
+          at (#3,0) {\hspace*{0.15\textwidth}\textsf{#4}};
+\end{tikzpicture}%
+}
+
+\usepackage[textfont=small, labelfont=bf, format=plain,%
+	position=top, justification=raggedright,width=.9\textwidth]{caption}
+\usepackage[font=footnotesize, labelfont=bf]{subfig}
+
+\usepackage{xcolor}
+%\definecolor{gray1}{gray}{0.2}
+\definecolor{darkred}{rgb}{0.545,0,0}
+\definecolor{midnightblue}{rgb}{0.098,0.098,0.439}
+\definecolor{darkred}{rgb}{0.176,0.23,0.31}
+\definecolor{indianred}{rgb}{0.545,0,0} % Between 0 and 1
+\definecolor{crimson}{RGB}{220,20,60} 
+\definecolor{gray1}{RGB}{3,3,3}
+%% Make color in equations
+\makeatletter
+\let\reftagform@=\tagform@
+\def\tagform@#1{\maketag@@@{(\ignorespaces\textcolor{blue}{#1}\unskip\@@italiccorr)}}
+\renewcommand{\eqref}[1]{\textup{\reftagform@{\ref{#1}}}}
+\makeatother
+\usepackage{hyperref}
+\hypersetup{%
+  breaklinks = {true},
+  colorlinks= {true},
+  linkcolor={indianred},
+  citecolor={indianred},
+  urlcolor = {midnightblue},
+  unicode  = {true},
+  bookmarksnumbered = {true},
+  bookmarksopen = {true}
+ }
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Options for fancy heading and alike
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\oddsidemargin = 12pt
+\textwidth = 450pt
+\headsep = 40pt
+\voffset = -10pt
+\fancyheadoffset{30pt}
+\headheight = 21pt
+\textheight = 620pt
+\pagenumbering{arabic}
+\renewcommand{\headrulewidth}{0.5pt}
+\setlength{\footskip}{0in}
+
+\fancyhf{}
+\fancyhead[C]{\textit{ \thepage\--(\pageref{LastPage}) }}
+\fancyhead[L]{\pgfuseimage{kriita}}
+\fancyhead[R]{\footnotesize \textsc{Arbetsprov}}
+\renewcommand\headrule
+{{\color{midnightblue}%
+  \hrule height 1pt
+         width\headwidth
+  \vspace{1pt}%
+  \hrule height 0.4pt
+         width\headwidth
+  \vspace{-4pt}
+  }}
+%%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Control over (indrag) and equation, respectively
+\setlength{\parindent}{0.7cm}
+\numberwithin{equation}{section}
+% Dir to search for graphs
+\graphicspath{{graf/}{graf_manual/}{all/}{FAST_GRAF/}}
+\DeclareGraphicsExtensions{.pdf}
+
+\usepackage{Sweave}
+%\SweaveOpts{ echo = TRUE, keep.source = TRUE}
+
+%% Lisiting options
+\usepackage{listings}
+\DeclareCaptionFont{white}{\color{white}}
+\DeclareCaptionFormat{listing}{\colorbox[cmyk]{0.43, 0.35, 0.35,0.01}{\parbox{0.95\textwidth}{\hspace{10pt}#1#2#3}}}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white, singlelinecheck=false, margin=0pt, font={bf,footnotesize}}
+\definecolor{light-gray}{gray}{0.95}
+\lstset{	language=R,
+		keywordstyle=\color{blue},
+		numbers=right, 
+                	numberstyle=\tiny, 
+                alsoletter={.},
+                breaklines=true,
+                backgroundcolor=\color{light-gray},
+                xleftmargin=5mm,
+                xrightmargin=8mm,
+                numbersep=5pt,
+                 frame=shadowbox,
+                 showstringspaces=false
+                } 
+
+
+
+\usepackage{fontspec}
+\usepackage{fontspec}
+\setmainfont[Ligatures=TeX]{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\linespread{1.3}% Mellanrum i texter
+\frenchspacing % remove extra space after punctuation
+\usepackage[explicit]{titlesec}
+%filcenter puts the section heading at middle and adjust with 1em accodingly
+% filright, filleft
+% titleformat{<label>}[format]{<section apperance>}{<number>}{space}{}{}
+\titleformat{\section}
+{\normalfont}{}{0em}
+{\SecTitle{east}{west}{0\paperwidth}{#1}}
+
+
+\titleformat{\subsection}
+{\normalfont}{}{0em}
+{\SecTitleSub{east}{west}{0\paperwidth}{#1}}
+
+\usepackage{Commands}	%\begin{mybox}{<title>} \begin{MyBlock}[<width>]{<title>}
+
+
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%
+\section{Definition} 
+\label{sec:1} 
+Paylevos verksamhet utgörs av online fakturering, där tanken är att överföra den risk som sker när köpet och 
+betalning inte sker på samma gång. Således så kommer Paylevo att "köpa" fakturan och överföra likvida 
+medel till företagaren.  Nu så är verksamheten mera komplex, risken är ofta på handlarens sida, men för att 
+lösa denna uppgift så kommer vi att låtsas att Paylevo tar risken och på så vis äger varje faktura som skapas 
+i systemet.  
+
+Alla fakturor är omvandla till svenska kronor. Följande villkor och statistik gäller initialt:
+
+\begin{enumerate}[label=\emph{\arabic*})]
+	\item \textit{Tidsperiod}:  Start (2014-10-01) till  (2016-11-14), vilket gör 
+		att en faktura idag är ansedd som en kredit förlust, cirka 4 månader.
+	\item \textit{Utgivna fakturor}: Avser även fakturor som slut kunden  ångrat sitt köp, totala antalet är 229 848 st.
+	\item \textit{Antal unika kunder}:  69 649 st.
+	\item \textit{Inflöde av pengar}:  130 018 474 SEK, är beräknad genom inflöde av likvida medel minus utflödet av pengar. 
+		Sker på grund av att vi ibland måste returnera pengar till slutkunden. 
+	\item \textit{Charges}: Är summan av alla intäkter från inkasso, ränta betalningspåminnelse, transaktionsavgift och fakturaavgift, vilket blir 20 643 892  SEK.
+	\item \textit{Förväntad förlust}: Är alla fakturor som idag är ansedda som en kredit förlust och avser endast själva kapital beloppet,  15 079 668  SEK.
+	\item \textit{Lönsam kund}: Detta sker på kundnivå, och genom förenkling så bortses här från den kostnad som är förknippad när Paylevo utfärdar en faktura. Men principen för en 
+		lönsam kund är \textit{Charges} $-$ \textit{Förväntad förlust}.
+\end{enumerate}
+
+Efter att rensat för de kunder där vi har kredit data samt endast för Svenska så ser bilden ut enligt följande:
+
+\begin{enumerate}[label=\emph{\arabic*})]
+	\item \textit{Utgivna fakturor}: 157 630 st.
+	\item \textit{Antal unika kunder}:  48 140 st.
+	\item \textit{Inflöde av pengar}:  63 446 961 SEK. 
+	\item \textit{Charges}:  12 505 266  SEK.
+	\item \textit{Förväntad förlust}:  12 111 163  SEK.
+	\item \textit{Procentuella förlust}: Baserad på antal fakturor,  16.7  procent,  och total summa
+		19.1 procent. Dessa siffror är väldigt höga, och stämmer inte. Men för att avgöra de bra från de dåliga så 
+		låtsas Paylevo ta risken för alla fakturor.
+\end{enumerate}
+
+\begin{equation*}
+\label{eq:1}
+\textsf{Default\_3}=\left\{
+\begin{array}{c l}     
+    1 & \textrm{  thumbs up }  \\
+    0 & \textrm{ thumbs down  }  \\
+    \end{array}\right.
+\end{equation*}
+
+The first part of the analysis it viewing the data, looking at the distribution, correlation and other bivariate technique.  
+
+
+
+
+
+
+\end{document}
+

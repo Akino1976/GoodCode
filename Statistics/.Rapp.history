@@ -1,0 +1,1644 @@
+Line
+cbind( PredictProb[, 2], as.character(testDT$Profitably ))
+cbind( round(PredictProb[, 2],2), as.character(testDT$Profitably ))
+cbind( round(PredictProb[, 2],3), as.character(testDT$Profitably ))
+conFTree
+pdf( file = file.path( GRAF, paste0('rocOpt.pdf')) ,#
+     height = unit(5,"cm"), width = unit(7,"cm"),#
+     pointsize = 10, colormodel = "rgb")    #
+	print(Line)#
+dev.off()
+str(conFTree)
+conFTree$byClass
+conFTree$byClass[['Sensitivity']]
+? confusionMatrix
+positive
+conFTree			<- confusionMatrix( PredictClass, testDT$Profitably, positive = 'True' )
+conFTree
+save( Summary, Summary1, Tree1, Tree2, Tree3 ,Format , conFTree , SummaryTest,file = file.path(DATA, "Data.RData") )
+209/6413
+testDT
+209/7943
+209/(209+ 6413)
+6413/(209+ 6413)
+6413/(362 + 6413)
+conFTree$byClass[['Pos Pred Valu']]
+conFTree$byClass
+conFTree$byClass[['Pos Pred Value']]
+conFTree$byClass[['Neg Pred Value']]
+conFTree
+Pred
+PredictClass
+roc.perf
+aucTree			<- auc( testDT$Profitably, PredictProb[,2])
+aucTree
+str(aucTree)
+str(aucTree$auc)
+aucTree$auc
+performance(Pred, measure = 'auc')
+aucTree				<- performance(Pred, measure = 'auc')
+slot(aucTree, "y.values")
+slot(aucTree, "y.values")[[1]]
+aucTree				<- slot(performance(Pred, measure = 'auc'), "y.values")[[1]]
+aucTree
+save( Summary, Summary1, Tree1, Tree2, Tree3 ,Format , conFTree , aucTree, SummaryTest,file = file.path(DATA, "Data.RData") )
+#!/usr/bin/env Rscript #
+###########################################################################################
+# This script is used for all sort of task that aren't to be for #
+# reporting purposes, just for solvning different task#
+###########################################################################################
+options(scipen = 999)#
+options("openxlsx.dateFormat" = "yyyy-mm-dd")#
+#
+Sys.setenv("R_ZIPCMD" = "/usr/bin/zip") ## makes openxlsx works in centos#
+DeductionRule	<- list( 	'co' = 'COMPENSATION',#
+							'pc' = 'PAPER_INVOICE_CHARGE',#
+							'ci' = 'COMPENSATION_INTEREST',#
+							'cr' = 'COMPENSATION_REMINDER',#
+							'cf' = 'INVOICING_CHARGE',#
+							'cl' = 'CANCELLATION',#
+							'ma' = 'MANUAL_DEDUCTION',#
+							'fb' = 'fallbackDeliveryCharge',#
+							'si' = 'Interest_settlement',#
+							'sr' = 'Reminder_charge_settlement',#
+							'rh' = 'Reserve_hold',#
+							'rr' = 'Reserve release')#
+#starts with HenkiloTiedot#
+finlandSourc			<- list( "ostovoima" = list("Purchasing_Power" = #
+													c(	"1" = 'Lowest_class',#
+														"2" = "Lower_medium_class",#
+														"3" = "Higher_medium_class",#
+														"4" = "Highest_class")),#
+								"koulutustaso" = list("Education_level" = #
+														c(	"1" = "Basic_education", #
+															"2" = "Intermediate_grade",#
+															"3" = "Higher_eduacation")),#
+								"elamanvaihe" = list("Life_state" = #
+												c("1" = "Young_adults_without_children_aged_18-35",#
+												"2" = "Family_with_children",#
+												"3" = "Adults_without_children_aged_35-64",#
+												"4" =  "Seniors_over_65_years")),#
+								"asuinaluetyyppi" = list("Type_of_residential_area" = #
+												c(	"1" = "Rural", #
+													"2" = "Densely_populated_areas",#
+													"3" = "Towns",#
+													"4" = "Big_cites",#
+													"5" = "Metropolitan_area")),#
+								"asunnonomistussuhde" = list("Ownership_of_housing" = #
+													c(	"1" = "Own",#
+														"2" = "Rented")),#
+								"asuntoTyyppi"		= list("Housing_type" = #
+													c(	"1" = "One_family_houst",#
+														"2" = "Block_house/aparment")),#
+								"maksuHairioriski"  = list("Risk_of_payment_defaults" = 					#
+															c(	"1" = "Small", 					#
+													"2" = "Minor",#
+													"3" = "Normal",#
+													"4" = "High")),#
+								"SyyKoodi"			= list("Reason_Code" = #
+															c("1" = "Credit_application"),#
+																"2" = "Credit_control",#
+																"3" = "Debt_collection",#
+																"6"	= "person_own_approval"),		#
+								"LuottoLuokka"		= list("Credit_quality"),#
+								"MerkintojenLkm"	= list("Number_of_remarks")		#
+						)#
+library(methods)	#
+scoreScale		<- c('MycketHög' = "c(70,100)",	'Hög' = "c(40, 69)", "Medel" = "c(20,39)", "Låg" = "c(1,19)")#
+#
+worker.init		<- function( pkg ){#
+			for( p in pkg ){#
+				library( p, character.only = TRUE)#
+			}#
+			NULL#
+		}#
+#
+regexp			<- tolower(paste0( names(finlandSourc), collapse = '|'))#
+paste0(as.character(do.call("rbind",lapply(finlandSourc, function(x) unlist(names(x)[[1]])))), collapse = "|")#
+"pathSet"			<- function( x )#
+{#
+	if( is( x, "character"))#
+	{#
+		cmd				<- paste0("echo ", x)#
+		cmd1			<- pipe( cmd , open = "r")#
+		path			<- scan(cmd1, what = "character")  #
+		close(cmd1)#
+		return(path)#
+	} else {#
+	 	stop("Input is ", class( x ), " and not valid in")#
+	}	#
+}#
+#
+# All R-files #
+RFiles 					<- list.files(path = '.' , include.dirs = TRUE, pattern = "*.R$", #
+											recursive = TRUE, full.names = TRUE)#
+# Load common functions and files , also Meocode and Person table is loaded#
+source(file = grep("commonfunction", RFiles,  value = TRUE, perl = TRUE, ignore.case = TRUE) )#
+#
+# pc, ci,cr,cf,ma,fb#
+DeductionRule 		<- data.table( type = c('co', 'pc', 'ci', 'cr','cf','cl','ma','fb'), #
+									what = c('COMPENSATION', 'PAPER_INVOICE_CHARGE', 'COMPENSATION_INTEREST', #
+											'COMPENSATION_REMINDER', 'INVOICING_CHARGE', 'CANCELLATION', #
+											'MANUAL_DEDUCTION', 'fallbackDeliveryCharge')#
+)#
+#
+FULLPATH		<- pathSet( x = "$PWD" )#
+DIR						<- basename(FULLPATH)#
+#
+DATA					<- file.path(FULLPATH, "Data")#
+GRAF					<- file.path(FULLPATH, "GRAF")#
+LOG						<- file.path(FULLPATH, 'logs')#
+FULLPATH				<- pathSet( x = "$PWD" )#
+.HOME			<- dirname(FULLPATH)#
+CreditDataPath	<-file.path(DATA, "credit.RData")#
+# Set the home diretory #
+RUN			<- file.path(LOG, "run.txt")#
+file.exists(RUN) && file.remove(RUN)#
+library(survival)#
+last_day 				<- function(date) {#
+  			 ceiling_date(date, "month") - days(1)#
+}#
+#
+invlogit <- function( x ) {#
+  step1 <- 1/(1+exp( - x ))#
+  return( round( step1, 4))#
+}#
+#
+for( i in c(GRAF, DATA , LOG))#
+{#
+	if(! file.exists(i) )#
+	{ ## If missing dir#
+		dir.create(i, recursive = TRUE)#
+	}#
+}#
+rm(i)#
+#
+## Further pkg loaded#
+Packages			 	<- c('reshape2', 'reshape', 'ggthemes', 'bit64','doSNOW','rpart','qgraph',#
+							'RColorBrewer','scales', 'ggplot2',  'grid','doParallel','gmodels',#
+							'gridExtra',"Hmisc", "jsonlite", 'ggfortify', 'caret') #
+## Set path and load pkgs#
+Pack		<- new("startUps", pkgs = Packages, path = dirname(FULLPATH) )#
+Pack$instant_pkgs()#
+## Get the lastest rates from ExchangeRate #
+#
+Pack$setDirs( )#
+#
+CurrentDate		<- Sys.Date( )#
+args1			<- ifelse( length( commandArgs(TRUE)) > 0, commandArgs(TRUE), "survival")#
+args1			<- tolower(args1)#
+print(args1)#
+#
+Query 	<- sprintf("SELECT * FROM ExchangeRate WHERE #
+				date = ( SELECT max(date) FROM ExchangeRate)")#
+#
+Rates 	<- getData(query = Query)#
+## Change to swedish currency #
+Rates[, Rates := Rates[currency == 'SEK', rate]/rate]#
+Rates		<- Rates[,.(currency, Rates)]#
+#
+Query 	<- sprintf("SELECT 	ei.*,#
+							iv.personId,#
+							iv.siteId,#
+							iv.ocrNumber,#
+							iv.ocrNumberReminder,#
+							iv.dueDate,#
+							iv.playerId,#
+							ss.type,#
+							ss.operatorId, #
+							iv.state,#
+							IF( ei.playingCurrency = 'EUR' #
+									AND ei.invoiceCurrency = 'SEK', #
+										ei.originalSettlementFee*ei.conversionRate, #
+											ei.originalSettlementFee) AS TransactionFee#
+							FROM ErpInvoice ei #
+						INNER JOIN Invoice iv ON (ei.invoiceNumber = iv.invoiceNumber)#
+						INNER JOIN Site ss ON (iv.siteId = ss.siteId)")#
+ErpInvoice 				<- getData(query = Query )#
+ErpInvoice[order(createdAt), Count := 1:.N, by = .(personId)]#
+Query 				<- sprintf("SELECT eph.* ,#
+										ss.siteId,#
+										ss.type,#
+										ss.operatorId#
+								FROM ErpPaymentHistory eph #
+								INNER JOIN Invoice ei ON (eph.invoiceNumber = ei.invoiceNumber)#
+								INNER JOIN Site ss ON (ei.siteId = ss.siteId)"	 )#
+ErpPaymentHistory 				<- getData(query = Query )#
+## Estimate the realmoney and get the last date #
+moneyDT							<-  ErpPaymentHistory[grepl('(m|r)',type) , .(money = SUM(amount), moneyDate =  paymentDate[.N]), by = .(invoiceNumber)]#
+#
+ErpInvoice 						<- merge(ErpInvoice, moneyDT, by = 'invoiceNumber', all.x = TRUE)#
+#
+compensationDT					<-  ErpPaymentHistory[grepl('c|e|p', type), .(compensation = SUM(amount), compensationDate = paymentDate[.N]), by = .(invoiceNumber)]#
+ErpInvoice 						<- merge(ErpInvoice, compensationDT, by = 'invoiceNumber', all.x = TRUE)#
+#
+Query		<- sprintf("SELECT 	et.*,#
+								ss.siteId,#
+								ss.type,#
+								ss.operatorId FROM ErpTransaction et #
+							INNER JOIN Invoice ei ON (et.invoiceNumber = ei.invoiceNumber)#
+							INNER JOIN Site ss ON (ei.siteId = ss.siteId)")#
+#
+ErpTransaction 				<- getData(query = Query )#
+Query				<- "SELECT * FROM InvoiceStateLog WHERE toState REGEXP '(^INVOICED$|.*SENT)'"#
+InvoiceStateLog		<- getData(query = Query)#
+InvoiceStateLog 			<- unique( InvoiceStateLog[order(created), ], by = 'invoiceNumber')[,.( invoiceNumber, sentAt = toState, created = as.Date(created))]#
+InvoiceStateLog[, sentAt := created][, created := NULL]#
+ErpInvoice			<- merge( ErpInvoice , InvoiceStateLog, by = 'invoiceNumber', all.x = TRUE)#
+#
+rm(InvoiceStateLog); gc(reset = TRUE)#
+PaylevoCreditCheck 			<- getData(query = "select * from kriita_survey.PaylevoCreditCheck where sourceType REGEXP '(CREDITSAFE|BISNODE_FINLAND)'")#
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck,#
+								 by = 'personId', formLast = TRUE)#
+#
+Count			<- 0#
+f		<- function( x )#
+{#
+		cat(strrep("=", 60))#
+		Count 	<<- Count + 1#
+		.personId		<- x[, trimws(personId)]#
+		.checkdate		<- x[, trimws(checkDate)]#
+		.country		<- x[, trimws(country)]#
+		cat("\n Running nr nr ",  Count , "\n")#
+		sourceData		<- jsonlite::fromJSON(x[, sourceData])#
+		setDT(sourceData)#
+		sourceData[, personId := .personId]							#
+		cat("\ndone\n")#
+		cat(strrep("=", 60))#
+		return( sourceData )#
+}#
+#
+	if( file.exists(CreditDataPath) &&  #
+		as.integer(difftime(Sys.Date() , as.Date( file.info(CreditDataPath)$mtime) )) < 2 )#
+	{#
+		load(CreditDataPath)#
+	} else {#
+		logOutput		<- file.path(LOG, 'outjson.txt')#
+		file.exists(logOutput) && file.remove(logOutput)#
+		OutPut				<- list( )		#
+		Tid <- system.time({#
+				cores 	<- getOption("mc.cores", detectCores())#
+				cl		<- makeCluster( cores, outfile = logOutput ) #
+				clusterCall( cl, worker.init,  c('data.table', 'jsonlite'))#
+				## Används för lägga in webExtrac och data in i environmnet#
+				clusterExport(cl, c("PaylevoCreditCheck","OutPut", "f","logOutput", "Count"), envir = environment())#
+				Output	<- parLapply(cl, 1:NROW( PaylevoCreditCheck ), #
+					function( x ) f( PaylevoCreditCheck[x]) )#
+				stopCluster(cl)#
+			})[1:3]#
+		DataSet		<- rbindlist(Output, fill = TRUE)#
+		## rm english#
+		#idx 		<-  DataSet[keys %like% '(CREDITENTRIE|BUSINESSCONNECTIONS|CREDITINFORMATION|PERSON)', unique(personId)]#
+		#setkey(DataSet, personId)#
+		#DataSet_1		<- DataSet[!J(idx),]#
+		#DataSet_1[!is.na(keys), unique(keys)]#
+		DataSet[, keys := gsub("BODY\\.(.*)", "\\1", keys)]#
+#
+		getKeys			<- '(AGE|FINAL_TAX|INCOME|DEBT|SCORING|Purchasing_Power|Education_level|Life_state|Type_of_residential_area|Ownership_of_housing|Housing_type|Risk_of_payment_defaults|Reason_Code|Number_of_remarks|Credit_quality)'#
+		DataSet1		<-  DataSet[keys %like% getKeys]#
+		CreditData		<- dcast.data.table(DataSet1, personId  ~ keys , value.var = 'values' )#
+		CreditData[, personId := as.character(personId)]#
+		save(CreditData, file = file.path(DATA, "credit.RData"))#
+		rm(getKeys, DataSet1, DataSet, PaylevoCreditCheck, OutPut)#
+		gc(reset = TRUE)#
+	}#
+timeToDefault		<- Sys.Date() - months(4)#
+#
+idx					<- ErpInvoice[, unique(invoiceNumber)]#
+setkey(ErpPaymentHistory, invoiceNumber)#
+ErpPayment			<- ErpPaymentHistory[J(idx)]#
+isNA				<- ErpPayment[, lapply(.SD, function(x) all(is.na(x)))] #
+if( any(isNA == TRUE )  )#
+{#
+	ErpPayment[, c( which(isNA  == TRUE)) := NULL]#
+}#
+ErpPayment1			<-  ErpPayment[, .( Charges = SUM( legalCharge + interest + reminderCharge + collectionCharge + installmentCharge + invoicingCharge),#
+										overpayment = SUM(overpayment),#
+										capital		= SUM(capital)#
+), by = .(invoiceNumber)]#
+#
+DataDT				<- merge(ErpInvoice, ErpPayment1, by = 'invoiceNumber', all.x = TRUE)#
+DataDT[, c("debtReference") := NULL]#
+DataDT				<- merge(DataDT, Rates, by.x = 'invoiceCurrency', by.y = 'currency', all.x = TRUE)#
+#
+isNumeric			<- which(DataDT[, lapply(.SD, is.numeric)] == TRUE)#
+#
+for( i in isNumeric)#
+{#
+	set(DataDT, i = which(is.na(  DataDT[, c(i), with = FALSE])), j = i, value = 0L )#
+}#
+rm( isNumeric , ErpPayment, idx ); gc(reset = TRUE)#
+## Make all to SEK#
+DataDT[, `:=` ( money 					= money*Rates, #
+				Charges 				= Charges*Rates,#
+				compensation			= compensation*Rates,#
+				overpayment				= overpayment*Rates,#
+				capital					= capital*Rates,#
+				originalSettlementFee	= originalSettlementFee*Rates,#
+				playingOriginalAmount	= playingOriginalAmount*Rates#
+)]#
+## If sent at is na then use createdAt#
+DataDT[is.na(sentAt) , sentAt := as.Date(createdAt)]#
+## Make the selection #
+DataDT1				<-  DataDT[as.character(sentAt) >= '2014-10-01' & as.character(sentAt) < timeToDefault,  ]#
+#
+DataDT_2			<-  DataDT1[, .( 	Total		= .N,#
+										NrPaid		= SUM(grepl('PAID', state)),#
+										NrDefault	= SUM(grepl("WAITING_TO_BE_COLLECTED", state)),#
+										NrDrop		= SUM(grepl("UNNECESSARY|CLOSED", state)),#
+										MoneyIN		= SUM(money - ifelse( is.na( compensation ), 0, compensation)),#
+										amountLoss	= SUM( ifelse( grepl("WAITING_TO_BE_COLLECTED", state) , playingOriginalAmount,0)),#
+										Charges		= SUM(Charges + ifelse(grepl('PAID', state), originalSettlementFee,0)),#
+										OverPay		= SUM(overpayment),#
+										Capital		= SUM(capital)#
+							), by = .(personId)][order(NrPaid)]#
+## DataDT1 is used below							#
+rm(DataDT ); gc(reset = TRUE)							#
+if(  #
+	file.exists( file.path(DATA, "Analysis.RData") ) &&#
+	 as.integer(difftime(Sys.Date(), as.Date(file.info(DATA, "Analysis.RData")$mtime)[[1]])) < 2#
+  )#
+{#
+	cat("Loading ", "\n")#
+	 load(file.path(DATA, "Analysis.RData"))#
+} else {#
+	DataDT_2[, personId := as.character(personId)]	#
+	DataDT_2			<- merge( DataDT_2, CreditData, by = 'personId', all.x = TRUE)#
+	save(DataDT_2, file = file.path(DATA, "Analysis.RData"))#
+	Summary				<- DataDT1[, .( 	AntalFakturor	= uniqueN(invoiceNumber), #
+										AntalPerson 	= uniqueN(personId), #
+										startSent 		= min(sentAt), #
+										endSent 		= max(sentAt),#
+										AmountLoss		= DataDT_2[,   SUM(amountLoss)],#
+										MoneyIN			= DataDT_2[,   SUM(MoneyIN)],#
+										Charges			= DataDT_2[,   SUM(Charges)],#
+										CapitalIN		= DataDT_2[,   SUM(Capital)]#
+		)]#
+}#
+CreditScore			<- DataDT_2[!is.na(AGE),    ]#
+CreditScore[, ProfitCustomer := Charges - amountLoss]#
+CreditScore[, `:=` ( Total 			= Total - NrDrop, # if zero then this customer hasn´t  genreted any invoice#
+					 Profitably 	= ifelse(ProfitCustomer > 0, 1, 0 )		#
+ ) ]	#
+#
+Summary1	<-	CreditScore[, .(	AntalKunder 	= uniqueN(personId),#
+							Antal			= SUM(Total),#
+							AntalBetld		= SUM(NrPaid),#
+							AntalDefault	= SUM(NrDefault),#
+							AntalDrop		= SUM(NrDrop),#
+							MoneyIN			= SUM(MoneyIN),#
+							Loss			= SUM(amountLoss),#
+							Charges			= SUM(Charges)#
+		)]
+## Omit those that are equal to zero		#
+CreditScore1			<-  CreditScore[Total != 0]#
+Names					<- names(CreditScore1)#
+## #
+rmNames					<- which(CreditScore1[, lapply(.SD, function(x) all(is.na(x)))] == TRUE)#
+if( any(rmNames > 0 ) ) #
+{#
+	CreditScore1[, c( rmNames ) := NULL]#
+	rm(rmNames)#
+}#
+Int						<- c("Total", "NrPaid", "NrDefault", "NrDrop", "AGE", "DEBT_NUMBER", "HISTORICAL_DEBT_DETAILS","SCORING")#
+Num						<- c("MoneyIN", "amountLoss", "Charges","OverPay", "AVERAGE_OWNED_PART_PERCENT", "DEBT_SUM", "FINAL_TAX", "FINAL_TAX2")#
+Num						<- c(Num,grep("INCOME", Names, value = TRUE))#
+CreditScore1[, c( Num) := lapply(.SD, as.numeric), .SDcols = Num]#
+CreditScore1[, c( Int) := lapply(.SD, as.integer), .SDcols = Int]#
+## rm those that have high amounts of NA, thersehold is that they should be below 5%#
+rmNA				<- CreditScore1[, lapply(.SD, function(x) SUM(is.na(x)))]/NROW(CreditScore1) > 0.05 #
+CreditScore1[, c( which(rmNA == TRUE) ) := NULL]#
+rm(rmNA)#
+#
+## Choose what to analyze here #
+Names			<- names(CreditScore1)#
+KeepVars		<- setdiff(Names,c("personId", "Total", "NrPaid", "NrDefault", "NrDrop", "MoneyIN","DEBT_PERSON", "amountLoss","Charges","OverPay","Capital","DEBT_AMAL_NUMBER", "DEBT_AMAL_SUM","DEBT_EMAL_NUMBER","DEBT_EMAL_SUM"))#
+#
+CreditScore2			<-  CreditScore1[, c(KeepVars), with = FALSE]#
+#CreditScore2[, idx := .I]#
+CreditScore2[, incTaxIncome := TEXEBLE_INCOME/TEXEBLE_INCOME2]#
+CreditScore2[incTaxIncome %like% '(Inf|NaN)', incTaxIncome := 0L]#
+## DEBTS #
+CreditScore2[, quantile(HISTORICAL_DEBT_DETAILS, probs = seq(0,1, 0.01), na.rm = TRUE)]#
+#
+CreditScore2[, ':=' ( Profitably 	= factor(Profitably, levels = c(0,1), labels = c("False", "True")),#
+						DEBT_NUMBER = ifelse(DEBT_NUMBER < 5, 'Low', 'High' ),#
+						AgeInt		= as.factor(ifelse(AGE < 30, 'Young', #
+											ifelse(AGE >= 30 & AGE < 50, "Middel", "Old")#
+						)),#
+					DEBT_DETAILS = as.factor(#
+								ifelse(HISTORICAL_DEBT_DETAILS == 0, 'None', #
+									ifelse( HISTORICAL_DEBT_DETAILS > 0 & HISTORICAL_DEBT_DETAILS < 10, #
+										'Medium', 'High') )),#
+					idx = .I					#
+) ]
+## rm those that have a near zero variance, #
+nzv						<- nearZeroVar( CreditScore2)#
+CreditScore2 			<- CreditScore2[, -c(nzv), with = FALSE]#
+importantVars			<- c("DEBT_SUM", "FINAL_TAX","INCOME","TOTAL_INCOME")#
+#
+checkOutliers			<- CreditScore2[, lapply(.SD, #
+				function(x) if(is.numeric(x))  quantile(x, probs = seq(0.99,1,0.01), na.rm = TRUE) else NA), .SDcols = importantVars]#
+if( all((checkOutliers[2, ]		- checkOutliers[1, ] )/checkOutliers[2, ] > 0.9) )#
+{#
+	CreditScore2				<-  CreditScore2[ DEBT_SUM  < (checkOutliers[.N, DEBT_SUM] - 1), ]#
+}#
+#
+## omit rows that containt NA#
+idx					<- CreditScore2[, lapply(.SD, function(x) which(is.na(x)== TRUE) ) ]#
+omitRows			<- as.integer(unique(as.character(unlist(c(idx)))))#
+CreditScore2		<- CreditScore2[-omitRows]#
+#
+## Data is cleand#
+trainIndex				<- createDataPartition(CreditScore2$idx, p = 0.8, list = FALSE )	#
+rmVars					<- c("HISTORICAL_DEBT_DETAILS", "idx", "AGE","ProfitCustomer")#
+trainDT					<- CreditScore2[trainIndex , ]#
+testDT					<- CreditScore2[-trainIndex , ]#
+trainDT[, prop.table(table(Profitably))]#
+testDT[, prop.table(table(Profitably))]#
+#########################################################################
+# Correlation analysis#
+#########################################################################
+# Select the v-variable                           #
+xVars				<- trainDT[, -c(rmVars), with  = FALSE]  #
+#
+isNumeric			<- which(xVars[, lapply(.SD, is.numeric)]  == TRUE )#
+#
+## Make the correlation matrix#
+corMatri			<-	cor(xVars[, c(isNumeric), with = FALSE])#
+dissimilarity 		<- 1 - abs(corMatri)#
+distance 			<- as.dist(dissimilarity) #
+#
+cc 					<- hclust(distance, method = 'complete')#
+pdf( file = file.path( GRAF, paste0('Dendogram.pdf')) ,#
+     height = unit(8,"cm"), width = unit(9,"cm"),#
+     pointsize = 10, colormodel = "rgb")                       #
+plot( cc, main = "Dendogram (Hierarkisk klusteranalys)", xlab = " ", #
+	ylab = "Distans (dissimilarity)", sub = "", )#
+dev.off()#
+##plot(hclust(distance),     main="Dissimilarity = 1 - abs( Correlation )", xlab="") #
+#
+corMatri[corMatri > 0.99]		<- 0#
+pdf( file = file.path(GRAF, paste0("CorrelationNumeric.pdf")) ,#
+     height = unit(6,"cm"), width = unit(7,"cm"),#
+     pointsize = 10, colormodel = "rgb")#
+	qgraph(corMatri, layout="spring", minimum = 0.1  ,borders = FALSE, vsize = 3,#
+       	label.cex = 0.6, labels = colnames(corMatri), directed = TRUE, arrows = TRUE,#
+		label.scale = FALSE)#
+title(main = 'Correlation of numeric credit data', col.main = "blue", cex.main = 1.3, family = "serif", sub = "Green = positive, red = negative \n(thickness on line = level of correlation)", cex.sub = 0.6, font.sub = 4)  	#
+dev.off( )	#
+rm( )#
+#
+corID		<- findCorrelation(corMatri, cutoff = 0.9)#
+rmName		<- colnames(corMatri[,corID])#
+xVars		<- xVars[, -c(rmName), with = FALSE]#
+rm( cc, distance, dissimilarity, corID, rmName, corMatri)#
+gc(reset = TRUE)#
+#
+#########################################################################################
+xVar			<- xVars[ , -c('Profitably'), with =FALSE]#
+yVar			<- xVars[ , c('Profitably'), with =FALSE]#
+fitControl <- trainControl(## 10-fold CV#
+                           	method = "repeatedcv",#
+                           	number = 10,#
+                           	summaryFunction = twoClassSummary,#
+							classProbs = TRUE,#
+                           ## repeated 3 times#
+                           repeats = 3)#
+ bmFit1 <- train(y = yVar$Profitably,#
+				x =  xVar,#
+                	 method = "rpart", #
+                	 metric = 'ROC',#
+                 	trControl = fitControl,#
+                 	tuneLength = 20)#
+#
+bmFit1 #
+Importnat			<- varImp(bmFit1)#
+pdf( file = file.path( GRAF, paste0('VarImportants.pdf')) ,#
+     height = unit(8,"cm"), width = unit(9,"cm"),#
+     pointsize = 10, colormodel = "rgb")                       #
+plot( Importnat, main ="Variable importants", xlab = " ", #
+	ylab = "", sub = "", )#
+dev.off()#
+#
+pdf( file = file.path( GRAF, paste0('ROCtree.pdf')) ,#
+     height = unit(8,"cm"), width = unit(9,"cm"),#
+     pointsize = 10, colormodel = "rgb")     #
+plot(bmFit1, scales = lst(x = list(log = 10)))#
+dev.off()#
+Imp			<- data.table(Importnat$importance, keep.rownames = TRUE)#
+ImpVar		<- Imp[Overall < 20, rn]#
+#
+xVar			<- xVars[ , -c('Profitably', ImpVar), with =FALSE]#
+yVar			<- xVars[ , c('Profitably'), with =FALSE]#
+tmp				<- cbind(yVar ,xVar)#
+#
+# xerror = cross validation error#
+tree_loss_matrix  <- rpart(Profitably ~., method = "class", data= tmp, control = rpart.control(cp = 0.0001, minsplit = 50))#
+#
+cp_				<- printcp(tree_loss_matrix)#
+cp_				<- as.data.table(cp_)#
+cp_[, SERule := xerror + xstd]#
+SERule			<- cp_[which.min(SERule), CP]#
+plotcp(tree_loss_matrix)#
+prundeTree		 	<- prune( tree_loss_matrix, cp = SERule)#
+pdf( file = file.path( GRAF, paste0('tree1.pdf')) ,#
+     height = unit(10,"cm"), width = unit(12,"cm"),#
+     pointsize = 10, colormodel = "rgb")     #
+rattle::fancyRpartPlot(prundeTree, sub = sprintf("Baserat på SE regel, %s", SERule))#
+dev.off( )#
+rm(Imp, ImpVar, tmp , SERule, cp_) #
+#
+Tree1		<- CreditScore2[DEBT_SUM >= 226 & DEBT_NUMBER == 'High', #
+										 .( Profit 		= SUM(ifelse( Profitably == 'True', ProfitCustomer, 0)),#
+												CreditLoss	= SUM( ifelse( Profitably == 'False', ProfitCustomer, 0)),#
+												RatioCL		= round(SUM( Profitably == 'False')/.N ,4)*100#
+)]#
+Tree2		<- CreditScore2[DEBT_SUM < 226, #
+							 .(	Profit 	= SUM(ifelse( Profitably == 'True', ProfitCustomer, 0)),#
+								CreditLoss	= SUM( ifelse( Profitably == 'False', ProfitCustomer, 0) ),#
+								RatioCL		= round(SUM( Profitably == 'False')/.N ,4)*100#
+								)]#
+Tree3		<- CreditScore2[DEBT_SUM >= 226 & DEBT_NUMBER != 'High' & TOTAL_INCOME < 88000,  #
+							 .(	Profit 	= SUM(ifelse( Profitably == 'True', ProfitCustomer, 0)),#
+								CreditLoss	= SUM( ifelse( Profitably == 'False', ProfitCustomer, 0) ),#
+								RatioCL		= round(SUM( Profitably == 'False')/.N ,4)*100#
+								)]#
+#
+## Forecasting, decide the optimal cutoff #
+#
+library(ROCR)#
+PredictProb			<- predict( prundeTree, newdata = testDT, type = 'prob') #
+ROCData				<- list("predictions" = PredictProb[,2], "labels" =  as.character (testDT$Profitably))#
+Pred				<- prediction(predictions = PredictProb[,2], labels = as.character(testDT$Profitably ))#
+roc.perf			<- performance(Pred, measure = 'tpr', x.measure = 'fpr' )#
+aucTree				<- slot(performance(Pred, measure = 'auc'), "y.values")[[1]]#
+pdf( file = file.path( GRAF, paste0('ROCtree.pdf')) ,#
+     height = unit(4,"cm"), width = unit(6,"cm"),#
+     pointsize = 10, colormodel = "rgb")    #
+	plot(roc.perf, main = 'Performance for decsion tree modell')#
+ 	abline(a=0, b= 1)#
+dev.off()
+dev.off()
+roc.acc				<-  performance(Pred, measure = 'acc')#
+ind 				<- which.max( slot(roc.acc	, "y.values")[[1]] )#
+acc 				<- slot(roc.acc, "y.values")[[1]][ind]#
+cutoff 				<- slot(roc.acc, "x.values")[[1]][ind]#
+#
+perfspec <- performance(Pred, measure="spec", x.measure="cutoff")#
+perfsens <- performance(Pred, measure="sens", x.measure="cutoff")#
+dd		<- rbind(#
+		data.table( 	yname 	= slot(perfspec, "y.name"), #
+					xvalue 	=  as.numeric(slot(perfspec, "x.values")[[1]]),#
+					yvalue	=  as.numeric(slot(perfspec, "y.values")[[1]]) )#
+,#
+		data.table( 	yname 	= slot(perfsens, "y.name"), #
+					xvalue 	=  as.numeric(slot(perfsens, "x.values")[[1]]),#
+					yvalue	=  as.numeric(slot(perfsens, "y.values")[[1]]) )#
+)#
+		Line <-	ggplot(dd, aes(x = xvalue, y = yvalue, group = yname, colour = yname)) +#
+					 geom_line(size = 2) +#
+					scale_y_continuous( expand = c(0.01,0.03), breaks = pretty_breaks(10),labels= percent) +					 #
+					scale_x_continuous( expand = c(0.01,0.03), breaks = pretty_breaks(10), labels = percent) +#
+					theme_igray( ) +#
+					theme(legend.position = 'bottom') +#
+ 					GuideCol(x = 'Measure') +#
+ 					labs(x = 'cutoff', y = 'value', title = 'Optimal cutoff')#
+pdf( file = file.path( GRAF, paste0('rocOpt.pdf')) ,#
+     height = unit(5,"cm"), width = unit(7,"cm"),#
+     pointsize = 10, colormodel = "rgb")    #
+	print(Line)#
+dev.off()#
+#
+rm( Line, dd, perfspec, perfsens)#
+PredictClass		<- predict( prundeTree, newdata = testDT, type = 'class') #
+conFTree			<- confusionMatrix( PredictClass, testDT$Profitably, positive = 'True' )#
+SummaryTest			<- testDT[, .(Antal = .N)]
+save( Summary, Summary1, Tree1, Tree2, Tree3 ,Format , conFTree , aucTree, SummaryTest,file = file.path(DATA, "Data.RData") )
+install.packages("xgboost", repos=c("http://dmlc.ml/drat/", getOption("repos")), type="source")
+library(xgboost)
+#!/usr/bin/env Rscript #
+###########################################################################################
+# This script is used for all sort of task that aren't to be for #
+# reporting purposes, just for solvning different task#
+###########################################################################################
+options(scipen = 999)#
+options("openxlsx.dateFormat" = "yyyy-mm-dd")#
+#
+Sys.setenv("R_ZIPCMD" = "/usr/bin/zip") ## makes openxlsx works in centos#
+DeductionRule	<- list( 	'co' = 'COMPENSATION',#
+							'pc' = 'PAPER_INVOICE_CHARGE',#
+							'ci' = 'COMPENSATION_INTEREST',#
+							'cr' = 'COMPENSATION_REMINDER',#
+							'cf' = 'INVOICING_CHARGE',#
+							'cl' = 'CANCELLATION',#
+							'ma' = 'MANUAL_DEDUCTION',#
+							'fb' = 'fallbackDeliveryCharge',#
+							'si' = 'Interest_settlement',#
+							'sr' = 'Reminder_charge_settlement',#
+							'rh' = 'Reserve_hold',#
+							'rr' = 'Reserve release')#
+#starts with HenkiloTiedot#
+finlandSourc			<- list( "ostovoima" = list("Purchasing_Power" = #
+													c(	"1" = 'Lowest_class',#
+														"2" = "Lower_medium_class",#
+														"3" = "Higher_medium_class",#
+														"4" = "Highest_class")),#
+								"koulutustaso" = list("Education_level" = #
+														c(	"1" = "Basic_education", #
+															"2" = "Intermediate_grade",#
+															"3" = "Higher_eduacation")),#
+								"elamanvaihe" = list("Life_state" = #
+												c("1" = "Young_adults_without_children_aged_18-35",#
+												"2" = "Family_with_children",#
+												"3" = "Adults_without_children_aged_35-64",#
+												"4" =  "Seniors_over_65_years")),#
+								"asuinaluetyyppi" = list("Type_of_residential_area" = #
+												c(	"1" = "Rural", #
+													"2" = "Densely_populated_areas",#
+													"3" = "Towns",#
+													"4" = "Big_cites",#
+													"5" = "Metropolitan_area")),#
+								"asunnonomistussuhde" = list("Ownership_of_housing" = #
+													c(	"1" = "Own",#
+														"2" = "Rented")),#
+								"asuntoTyyppi"		= list("Housing_type" = #
+													c(	"1" = "One_family_houst",#
+														"2" = "Block_house/aparment")),#
+								"maksuHairioriski"  = list("Risk_of_payment_defaults" = 					#
+															c(	"1" = "Small", 					#
+													"2" = "Minor",#
+													"3" = "Normal",#
+													"4" = "High")),#
+								"SyyKoodi"			= list("Reason_Code" = #
+															c("1" = "Credit_application"),#
+																"2" = "Credit_control",#
+																"3" = "Debt_collection",#
+																"6"	= "person_own_approval"),		#
+								"LuottoLuokka"		= list("Credit_quality"),#
+								"MerkintojenLkm"	= list("Number_of_remarks")		#
+						)#
+library(methods)	#
+scoreScale		<- c('MycketHög' = "c(70,100)",	'Hög' = "c(40, 69)", "Medel" = "c(20,39)", "Låg" = "c(1,19)")#
+#
+worker.init		<- function( pkg ){#
+			for( p in pkg ){#
+				library( p, character.only = TRUE)#
+			}#
+			NULL#
+		}#
+#
+regexp			<- tolower(paste0( names(finlandSourc), collapse = '|'))#
+paste0(as.character(do.call("rbind",lapply(finlandSourc, function(x) unlist(names(x)[[1]])))), collapse = "|")#
+"pathSet"			<- function( x )#
+{#
+	if( is( x, "character"))#
+	{#
+		cmd				<- paste0("echo ", x)#
+		cmd1			<- pipe( cmd , open = "r")#
+		path			<- scan(cmd1, what = "character")  #
+		close(cmd1)#
+		return(path)#
+	} else {#
+	 	stop("Input is ", class( x ), " and not valid in")#
+	}	#
+}#
+#
+# All R-files #
+RFiles 					<- list.files(path = '.' , include.dirs = TRUE, pattern = "*.R$", #
+											recursive = TRUE, full.names = TRUE)#
+# Load common functions and files , also Meocode and Person table is loaded#
+source(file = grep("commonfunction", RFiles,  value = TRUE, perl = TRUE, ignore.case = TRUE) )#
+#
+# pc, ci,cr,cf,ma,fb#
+DeductionRule 		<- data.table( type = c('co', 'pc', 'ci', 'cr','cf','cl','ma','fb'), #
+									what = c('COMPENSATION', 'PAPER_INVOICE_CHARGE', 'COMPENSATION_INTEREST', #
+											'COMPENSATION_REMINDER', 'INVOICING_CHARGE', 'CANCELLATION', #
+											'MANUAL_DEDUCTION', 'fallbackDeliveryCharge')#
+)#
+#
+FULLPATH		<- pathSet( x = "$PWD" )#
+DIR						<- basename(FULLPATH)#
+#
+DATA					<- file.path(FULLPATH, "Data")#
+GRAF					<- file.path(FULLPATH, "GRAF")#
+LOG						<- file.path(FULLPATH, 'logs')#
+FULLPATH				<- pathSet( x = "$PWD" )#
+.HOME			<- dirname(FULLPATH)#
+CreditDataPath	<-file.path(DATA, "credit.RData")#
+# Set the home diretory #
+RUN			<- file.path(LOG, "run.txt")#
+file.exists(RUN) && file.remove(RUN)#
+library(survival)#
+last_day 				<- function(date) {#
+  			 ceiling_date(date, "month") - days(1)#
+}#
+#
+invlogit <- function( x ) {#
+  step1 <- 1/(1+exp( - x ))#
+  return( round( step1, 4))#
+}#
+for( i in c(GRAF, DATA , LOG))#
+{#
+	if(! file.exists(i) )#
+	{ ## If missing dir#
+		dir.create(i, recursive = TRUE)#
+	}#
+}#
+rm(i)#
+#
+## Further pkg loaded#
+Packages			 	<- c('reshape2', 'reshape', 'ggthemes', 'bit64','doSNOW','rpart','qgraph',#
+							'RColorBrewer','scales', 'ggplot2',  'grid','doParallel','gmodels',#
+							'gridExtra',"Hmisc", "jsonlite", 'ggfortify', 'caret') #
+## Set path and load pkgs#
+Pack		<- new("startUps", pkgs = Packages, path = dirname(FULLPATH) )#
+Pack$instant_pkgs()#
+## Get the lastest rates from ExchangeRate #
+#
+Pack$setDirs( )#
+#
+CurrentDate		<- Sys.Date( )#
+args1			<- ifelse( length( commandArgs(TRUE)) > 0, commandArgs(TRUE), "survival")#
+args1			<- tolower(args1)#
+print(args1)#
+Query 	<- sprintf("SELECT * FROM ExchangeRate WHERE #
+				date = ( SELECT max(date) FROM ExchangeRate)")#
+#
+Rates 	<- getData(query = Query)#
+## Change to swedish currency #
+Rates[, Rates := Rates[currency == 'SEK', rate]/rate]#
+Rates		<- Rates[,.(currency, Rates)]#
+#
+Query 	<- sprintf("SELECT 	ei.*,#
+							iv.personId,#
+							iv.siteId,#
+							iv.ocrNumber,#
+							iv.ocrNumberReminder,#
+							iv.dueDate,#
+							iv.playerId,#
+							ss.type,#
+							ss.operatorId, #
+							iv.state,#
+							IF( ei.playingCurrency = 'EUR' #
+									AND ei.invoiceCurrency = 'SEK', #
+										ei.originalSettlementFee*ei.conversionRate, #
+											ei.originalSettlementFee) AS TransactionFee#
+							FROM ErpInvoice ei #
+						INNER JOIN Invoice iv ON (ei.invoiceNumber = iv.invoiceNumber)#
+						INNER JOIN Site ss ON (iv.siteId = ss.siteId)")#
+ErpInvoice 				<- getData(query = Query )#
+ErpInvoice[order(createdAt), Count := 1:.N, by = .(personId)]#
+Query 				<- sprintf("SELECT eph.* ,#
+										ss.siteId,#
+										ss.type,#
+										ss.operatorId#
+								FROM ErpPaymentHistory eph #
+								INNER JOIN Invoice ei ON (eph.invoiceNumber = ei.invoiceNumber)#
+								INNER JOIN Site ss ON (ei.siteId = ss.siteId)"	 )#
+ErpPaymentHistory 				<- getData(query = Query )#
+## Estimate the realmoney and get the last date #
+moneyDT							<-  ErpPaymentHistory[grepl('(m|r)',type) , .(money = SUM(amount), moneyDate =  paymentDate[.N]), by = .(invoiceNumber)]#
+#
+ErpInvoice 						<- merge(ErpInvoice, moneyDT, by = 'invoiceNumber', all.x = TRUE)#
+#
+compensationDT					<-  ErpPaymentHistory[grepl('c|e|p', type), .(compensation = SUM(amount), compensationDate = paymentDate[.N]), by = .(invoiceNumber)]#
+ErpInvoice 						<- merge(ErpInvoice, compensationDT, by = 'invoiceNumber', all.x = TRUE)#
+#
+Query		<- sprintf("SELECT 	et.*,#
+								ss.siteId,#
+								ss.type,#
+								ss.operatorId FROM ErpTransaction et #
+							INNER JOIN Invoice ei ON (et.invoiceNumber = ei.invoiceNumber)#
+							INNER JOIN Site ss ON (ei.siteId = ss.siteId)")#
+#
+ErpTransaction 				<- getData(query = Query )
+ErpInvoice
+ErpInvoice[, unique(operatorId)]
+args1			<- ifelse( length( commandArgs(TRUE)) > 0, commandArgs(TRUE), "sbg")
+regexpr("^sbg$") > 0)
+regexpr("^sbg$") > 0
+regexpr("^sbg$", args) > 0
+args1
+regexpr("^sbg$", args1 ) > 0
+if( regexpr("^sbg$", args1 ) > 0 )#
+{#
+	args1			<- "messenio|southbaygroup"#
+}
+args1
+Query 	<- sprintf("SELECT 	ei.*,#
+							iv.personId,#
+							iv.siteId,#
+							iv.ocrNumber,#
+							iv.ocrNumberReminder,#
+							iv.dueDate,#
+							iv.playerId,#
+							ss.type,#
+							ss.operatorId, #
+							iv.state,#
+							IF( ei.playingCurrency = 'EUR' #
+									AND ei.invoiceCurrency = 'SEK', #
+										ei.originalSettlementFee*ei.conversionRate, #
+											ei.originalSettlementFee) AS TransactionFee#
+							FROM ErpInvoice ei #
+						INNER JOIN Invoice iv ON (ei.invoiceNumber = iv.invoiceNumber)#
+						INNER JOIN Site ss ON (iv.siteId = ss.siteId)#
+						WHERE ss.operatorId RLIKE '%s'", args1 )
+ErpInvoice 				<- getData(query = Query )
+ErpInvoice
+ErpInvoice[order(createdAt), Count := 1:.N, by = .(personId)]#
+Query 				<- sprintf("SELECT eph.* ,#
+										ss.siteId,#
+										ss.type,#
+										ss.operatorId#
+								FROM ErpPaymentHistory eph #
+								INNER JOIN Invoice ei ON (eph.invoiceNumber = ei.invoiceNumber)#
+								INNER JOIN Site ss ON (ei.siteId = ss.siteId),#
+								WHERE ss.operatorId RLIKE '%s'", args1"	 )
+Query 				<- sprintf("SELECT eph.* ,#
+										ss.siteId,#
+										ss.type,#
+										ss.operatorId#
+								FROM ErpPaymentHistory eph #
+								INNER JOIN Invoice ei ON (eph.invoiceNumber = ei.invoiceNumber)#
+								INNER JOIN Site ss ON (ei.siteId = ss.siteId),#
+								WHERE ss.operatorId RLIKE '%s'", args1	 )
+Query 				<- sprintf("SELECT eph.* ,#
+										ss.siteId,#
+										ss.type,#
+										ss.operatorId#
+								FROM ErpPaymentHistory eph #
+								INNER JOIN Invoice ei ON (eph.invoiceNumber = ei.invoiceNumber)#
+								INNER JOIN Site ss ON (ei.siteId = ss.siteId),#
+								WHERE ss.operatorId RLIKE '%s'", args1	 )
+ErpPaymentHistory 				<- getData(query = Query )
+Query 				<- sprintf("SELECT eph.* ,#
+										ss.siteId,#
+										ss.type,#
+										ss.operatorId#
+								FROM ErpPaymentHistory eph #
+								INNER JOIN Invoice ei ON (eph.invoiceNumber = ei.invoiceNumber)#
+								INNER JOIN Site ss ON (ei.siteId = ss.siteId)#
+								WHERE ss.operatorId RLIKE '%s'", args1	 )#
+ErpPaymentHistory 				<- getData(query = Query )
+## Estimate the realmoney and get the last date #
+moneyDT							<-  ErpPaymentHistory[grepl('(m|r)',type) , .(money = SUM(amount), moneyDate =  paymentDate[.N]), by = .(invoiceNumber)]#
+#
+ErpInvoice 						<- merge(ErpInvoice, moneyDT, by = 'invoiceNumber', all.x = TRUE)#
+#
+compensationDT					<-  ErpPaymentHistory[grepl('c|e|p', type), .(compensation = SUM(amount), compensationDate = paymentDate[.N]), by = .(invoiceNumber)]#
+ErpInvoice 						<- merge(ErpInvoice, compensationDT, by = 'invoiceNumber', all.x = TRUE)
+Query		<- sprintf("SELECT 	et.*,#
+								ss.siteId,#
+								ss.type,#
+								ss.operatorId FROM ErpTransaction et #
+							INNER JOIN Invoice ei ON (et.invoiceNumber = ei.invoiceNumber)#
+							INNER JOIN Site ss ON (ei.siteId = ss.siteId)#
+							WHERE ss.operatorId RLIKE '%s'", args1")#
+#
+ErpTransaction 				<- getData(query = Query )
+Query		<- sprintf("SELECT 	et.*,#
+								ss.siteId,#
+								ss.type,#
+								ss.operatorId FROM ErpTransaction et #
+							INNER JOIN Invoice ei ON (et.invoiceNumber = ei.invoiceNumber)#
+							INNER JOIN Site ss ON (ei.siteId = ss.siteId)#
+							WHERE ss.operatorId RLIKE '%s'", args1)#
+#
+ErpTransaction 				<- getData(query = Query )
+Query		<- sprintf("SELECT 	et.*,#
+								ss.siteId,#
+								ss.type,#
+								ss.operatorId FROM ErpTransaction et #
+							INNER JOIN Invoice ei ON (et.invoiceNumber = ei.invoiceNumber)#
+							INNER JOIN Site ss ON (ei.siteId = ss.siteId)#
+							WHERE ss.operatorId RLIKE '%s'", args1)#
+#
+ErpTransaction 				<- getData(query = Query )
+PaylevoCreditCheck
+PaylevoCreditCheck 			<- getData(query = "select * from kriita_survey.PaylevoCreditCheck where sourceType REGEXP '(CREDITSAFE|BISNODE_FINLAND)'")
+setkey(PaylevoCreditCheck, personId)
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck[J( unique(ErpInvoice$peronsId))],#
+								 by = 'personId', formLast = TRUE)
+sapply(PaylevoCreditCheck, class)
+PaylevoCreditCheck[, personId := as.character(personId)]
+PaylevoCreditCheck[, personId := as.character(personId)]#
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck[J( unique(ErpInvoice$peronsId))],#
+								 by = 'personId', formLast = TRUE)
+setkey(PaylevoCreditCheck, personId)#
+PaylevoCreditCheck[, personId := as.character(personId)]#
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck[J( unique(ErpInvoice$peronsId))],#
+								 by = 'personId', formLast = TRUE)
+PaylevoCreditCheck[, personId := as.character(personId)]
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck[J( unique(ErpInvoice$peronsId))],#
+								 by = 'personId', formLast = TRUE)
+setkey(PaylevoCreditCheck, personId)
+PaylevoCreditCheck[J( unique(ErpInvoice$peronsId))]
+PaylevoCreditCheck[J( as.character( unique(ErpInvoice$peronsId))) ]
+PaylevoCreditCheck[J( as.character( unique(ErpInvoice$personId))) ]
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck[J( as.character( unique(ErpInvoice$personId))) ],#
+								 by = 'personId', formLast = TRUE)
+Count			<- 0#
+f		<- function( x )#
+{#
+		cat(strrep("=", 60))#
+		Count 	<<- Count + 1#
+		.personId		<- x[, trimws(personId)]#
+		.checkdate		<- x[, trimws(checkDate)]#
+		.country		<- x[, trimws(country)]#
+		cat("\n Running nr nr ",  Count , "\n")#
+		sourceData		<- jsonlite::fromJSON(x[, sourceData])#
+		setDT(sourceData)#
+		sourceData[, personId := .personId]							#
+		cat("\ndone\n")#
+		cat(strrep("=", 60))#
+		return( sourceData )#
+}
+file.exists(CreditDataPath)
+as.integer(difftime(Sys.Date() , as.Date( file.info(CreditDataPath)$mtime) )) < 2
+CreditDataPath	<-file.path(DATA, "merchant.RData")
+logOutput		<- file.path(LOG, 'outjson.txt')#
+		file.exists(logOutput) && file.remove(logOutput)#
+		OutPut				<- list( )		#
+		Tid <- system.time({#
+				cores 	<- getOption("mc.cores", detectCores())#
+				cl		<- makeCluster( cores, outfile = logOutput ) #
+				clusterCall( cl, worker.init,  c('data.table', 'jsonlite'))#
+				## Används för lägga in webExtrac och data in i environmnet#
+				clusterExport(cl, c("PaylevoCreditCheck","OutPut", "f","logOutput", "Count"), envir = environment())#
+				Output	<- parLapply(cl, 1:NROW( PaylevoCreditCheck ), #
+					function( x ) f( PaylevoCreditCheck[x]) )#
+				stopCluster(cl)#
+			})[1:3]#
+		DataSet		<- rbindlist(Output, fill = TRUE)#
+		## rm english#
+		#idx 		<-  DataSet[keys %like% '(CREDITENTRIE|BUSINESSCONNECTIONS|CREDITINFORMATION|PERSON)', unique(personId)]#
+		#setkey(DataSet, personId)#
+		#DataSet_1		<- DataSet[!J(idx),]#
+		#DataSet_1[!is.na(keys), unique(keys)]#
+		DataSet[, keys := gsub("BODY\\.(.*)", "\\1", keys)]#
+#
+		getKeys			<- '(AGE|FINAL_TAX|INCOME|DEBT|SCORING|Purchasing_Power|Education_level|Life_state|Type_of_residential_area|Ownership_of_housing|Housing_type|Risk_of_payment_defaults|Reason_Code|Number_of_remarks|Credit_quality)'#
+		DataSet1		<-  DataSet[keys %like% getKeys]#
+		CreditData		<- dcast.data.table(DataSet1, personId  ~ keys , value.var = 'values' )#
+		CreditData[, personId := as.character(personId)]#
+		save(CreditData, file = file.path(DATA, "credit.RData"))#
+		rm(getKeys, DataSet1, DataSet, PaylevoCreditCheck, OutPut)#
+		gc(reset = TRUE)
+OutPut				<- list( )
+Tid <- system.time({#
+				cores 	<- getOption("mc.cores", detectCores())#
+				cl		<- makeCluster( cores, outfile = logOutput ) #
+				clusterCall( cl, worker.init,  c('data.table', 'jsonlite'))#
+				## Används för lägga in webExtrac och data in i environmnet#
+				clusterExport(cl, c("PaylevoCreditCheck","OutPut", "f","logOutput", "Count"), envir = environment())#
+				Output	<- parLapply(cl, 1:NROW( PaylevoCreditCheck ), #
+					function( x ) f( PaylevoCreditCheck[x]) )#
+				stopCluster(cl)#
+			})[1:3]
+PaylevoCreditCheck
+PaylevoCreditCheck 			<- getData(query = "select * from kriita_survey.PaylevoCreditCheck where sourceType REGEXP '(CREDITSAFE|BISNODE_FINLAND)'")#
+PaylevoCreditCheck[, personId := as.character(personId)]#
+#
+setkey(PaylevoCreditCheck, personId)#
+PaylevoCreditCheck	<- unique( PaylevoCreditCheck[J( as.character( unique(ErpInvoice$personId))) ],#
+								 by = 'personId', formLast = TRUE)
+logOutput		<- file.path(LOG, 'outjson.txt')#
+		file.exists(logOutput) && file.remove(logOutput)#
+		OutPut				<- list( )
+Tid <- system.time({#
+				cores 	<- getOption("mc.cores", detectCores())#
+				cl		<- makeCluster( cores, outfile = logOutput ) #
+				clusterCall( cl, worker.init,  c('data.table', 'jsonlite'))#
+				## Används för lägga in webExtrac och data in i environmnet#
+				clusterExport(cl, c("PaylevoCreditCheck","OutPut", "f","logOutput", "Count"), envir = environment())#
+				Output	<- parLapply(cl, 1:NROW( PaylevoCreditCheck ), #
+					function( x ) f( PaylevoCreditCheck[x]) )#
+				stopCluster(cl)#
+			})[1:3]
+PaylevoCreditCheck
+PaylevoCreditCheck[is.na(sourceType)]
+PaylevoCreditCheck[is.na(sourceType), unique(personId)]
+setkey(ErpInvoice, personId)
+ErpInvoice[J(PaylevoCreditCheck[is.na(sourceType), unique(personId)])
+]
+sapply(ErpInvoice,class)
+ErpInvoice[, personId := as.character(personId)]
+setkey(ErpInvoice, personId)
+ErpInvoice[J(PaylevoCreditCheck[is.na(sourceType), unique(personId)])]
+ErpInvoice[J(PaylevoCreditCheck[is.na(sourceType), unique(personId)]), range(createdAt)]
+ErpInvoice[J(PaylevoCreditCheck[is.na(sourceType), unique(personId)]),][createdAt >= '2017-01-01']
+ErpInvoice[J(PaylevoCreditCheck[is.na(sourceType), unique(personId)]),][createdAt >= '2017-01-01' & type == 'NORMAL']
+PaylevoCreditCheck[!is.na(sourceType)]
+PaylevoCreditCheck1		<-  PaylevoCreditCheck[!is.na(sourceType)]
+OutPut				<- list( )		#
+		Tid <- system.time({#
+				cores 	<- getOption("mc.cores", detectCores())#
+				cl		<- makeCluster( cores, outfile = logOutput ) #
+				clusterCall( cl, worker.init,  c('data.table', 'jsonlite'))#
+				## Används för lägga in webExtrac och data in i environmnet#
+				clusterExport(cl, c("PaylevoCreditCheck1","OutPut", "f","logOutput", "Count"), envir = environment())#
+				Output	<- parLapply(cl, 1:NROW( PaylevoCreditCheck1 ), #
+					function( x ) f( PaylevoCreditCheck1[x]) )#
+				stopCluster(cl)#
+			})[1:3]#
+		DataSet		<- rbindlist(Output, fill = TRUE)
+DataSet
+DataSet[, keys := gsub("BODY\\.(.*)", "\\1", keys)]#
+#
+		getKeys			<- '(AGE|FINAL_TAX|INCOME|DEBT|SCORING|Purchasing_Power|Education_level|Life_state|Type_of_residential_area|Ownership_of_housing|Housing_type|Risk_of_payment_defaults|Reason_Code|Number_of_remarks|Credit_quality)'#
+		DataSet1		<-  DataSet[keys %like% getKeys]#
+		CreditData		<- dcast.data.table(DataSet1, personId  ~ keys , value.var = 'values' )#
+		CreditData[, personId := as.character(personId)]
+CreditData
+CreditDataPath
+save(CreditData, file = CreditDataPath )
+CreditData
+ErpInvoice
+ErpInvoice[,.N, by = .(country)]
+ErpInvoice[, .(Antal = .N), by = .(country)]
+ErpInvoice
+ErpInvoice[, table(state)]
+ErpInvoice[, .(			Antal 	= .N, #
+						Open 	= SUM(state %in% 'INVOICE_SENT|REMINDED_1|INVOICE_REMINDED_FINAL')#
+), by = .(country)]
+ErpInvoice[, .(			Antal 	= .N, #
+						Open 	= SUM(state %like% 'INVOICE_SENT|REMINDED_1|INVOICE_REMINDED_FINAL')#
+), by = .(country)]
+ErpInvoice[, `:=` (Yearly = as.Date(createdAt, format = "%Y"))]
+ErpInvoice
+ErpInvoice[, `:=` (Yearly = format(as.Date(createdAt), "%Y"))]
+ErpInvoice
+ErpInvoice[, .(			Antal 	= .N#
+), by = .(Yearly , country)]
+ErpInvoice[, `:=` (Bill_date = as.Date(createdAt))]
+ErpInvoice[, `:=` (Yearly = format(Bill_date, "%Y"))]
+ErpInvoice[, .(			Antal 	= .N#
+), by = .(Yearly , Bill_date , country)]
+ErpInvoice[, .(			Antal 	= .N ), by = .(Yearly , Bill_date , country)][order(Bill_date, country)]
+Daily			<- ErpInvoice[, .(			Antal 	= .N ), by = .(Yearly , Bill_date , country)][order(Bill_date, country)]
+Daily
+ggplot(Daily, aes(x = Bill_date, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap(country)
+ggplot(Daily, aes(x = Bill_date, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( .~ country)
+ggplot(Daily, aes(x = Bill_date, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+Daily
+ErpInvoice[, `:=` (Bill_date = as.Date(createdAt))]#
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%m-%d")#
+)]
+ErpInvoice
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+Daily
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%m")#
+)]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%M")#
+)]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%m")#
+)]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+?strsplit
+?format
+ErpInvoice[, `:=` (Bill_date = as.Date(createdAt))]#
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%b")#
+)]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+ErpInvoice
+ErpInvoice[, unique(Monthly)]
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%m"),#
+)]
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%m")#
+)]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%Y-%B")),#
+								tmpRange 	= unique(format(Bill_date, "%Y-%m")))][order(tmpRange), DateRange]
+Months
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%B")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))][order(tmpRange), DateRange]
+Months
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%b")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))][order(tmpRange), DateRange]
+Months
+ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%b")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))]
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%b")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))][order(tmpRange), DateRange]
+Daily$Monthly	<- factor(Daily$Monthly, levels = Months)
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%b")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))][order(tmpRange), DateRange]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+Daily$Monthly	<- factor(Daily$Monthly, levels = Months)#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+ErpInvoice
+ErpInvoice[, `:=` (Bill_date = as.Date(createdAt))]#
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%m")#
+)]#
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%b")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))][order(tmpRange), DateRange]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+Daily$Monthly	<- factor(Daily$Monthly, levels = Months)#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+Months
+ErpInvoice
+ErpInvoice[, `:=` (Yearly 		= format(Bill_date, "%Y"), #
+					Monthly 	= format(Bill_date, "%b")#
+)]#
+Months 			<- ErpInvoice[, .(	DateRange 	= unique(format(Bill_date, "%b")),#
+									tmpRange 	= unique(format(Bill_date, "%m")))][order(tmpRange), DateRange]#
+Daily			<- ErpInvoice[, .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]#
+Daily$Monthly	<- factor(Daily$Monthly, levels = Months)#
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( ) + #
+	facet_wrap( ~ country)
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 1.3) +#
+	geom_point(size = 1.1) + #
+	facet_wrap( ~ country)
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country)
+Daily
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncols = 2, scales = 'free_y') +#
+	geom_label( )
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_label( )
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+Daily[, unique(Yearly)]
+Daily[, .SD[.N]
+Daily[, .SD[.N]]
+Daily[, .SD[.N], by = .(Yearly)]
+Daily[order(Monthly), .SD[.N], by = .(Yearly)]
+Daily[order(Monthly), .SD[.N], by = .(Yearly)][,.(Yearly, Monthly)]
+textData = Daily[order(Monthly), .SD[.N], by = .(Yearly)][,.(Yearly, Monthly)]
+textData
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_label(textData, aes(x,y, label = Yearly))
+textData = Daily[order(Monthly), .SD[.N], by = .(Yearly)][,.(Yearly, Monthly, y = 1000)]
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_label(textData, aes(x,y, label = Yearly))
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_label(textData, aes(x = Monthly,y = 1000, label = Yearly))
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_text(textData, aes(x = Monthly,y = 1000, label = Yearly))
+textData = Daily[order(Monthly), .SD[.N], by = .(Yearly)][,.(Yearly, Monthly = as.factor(Monthly), y = 1000)]
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_text(textData, aes(x = Monthly,y = 1000, label = Yearly))
+textData = Daily[order(Monthly), .SD[.N], by = .(Yearly)][,.(Yearly, Monthly = as.factor(Monthly), y = 1000)]
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	geom_text(textData, aes(x = Monthly,y = 1000, label = Yearly))
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+	scale_colour_tableau("tableau10") +#
+	GuideCol("Creation year", nrow = 1)	+#
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+	scale_colour_tableau("tableau10") +#
+	theme(legend.position = 'bottom') +#
+	GuideCol("Creation year", nrow = 1)	+#
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+	scale_colour_tableau("tableau10") +#
+	theme(legend.position = 'bottom') +#
+	GuideCol("Creation year", nrow = 1)	+#
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+	theme_igray()
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+	geom_line( size = 0.95) +#
+	geom_point(size = 1.3) + #
+	scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+	theme_igray() + #
+	scale_colour_tableau("tableau10") +#
+	theme(legend.position = 'bottom') +#
+	GuideCol("Creation year", nrow = 1)	+#
+	facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+Daily			<- ErpInvoice[state != 'CLOSED',  .(	Antal 	= .N ), by = .(Yearly , Monthly , country)][order(Monthly, country)]
+Daily
+Daily$Monthly	<- factor(Daily$Monthly, levels = Months)#
+#
+textData = Daily[order(Monthly), .SD[.N], by = .(Yearly)][,.(Yearly, Monthly = as.factor(Monthly), y = 1000)]#
+			ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs("Månadsvis", y = 'Antal', titel = 'Antal skapade fakturor')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs("Månadsvis", y = 'Antal', title = 'Antal skapade fakturor')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(caption = "Månadsvis", x = NA ,y = 'Antal', title = 'Antal skapade fakturor')
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Månadsvis" ,y = 'Antal', title = 'Antal skapade fakturor')
+ErpInvoice
+args1
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Månadsvis" ,y = 'Antal', title = sprintf('Antal skapade fakturor (%s)', args1)
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Månadsvis" ,y = 'Antal', title = sprintf('Antal skapade fakturor (%s)', args1))
+ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Månadsvis" ,y = 'Antal', title = sprintf('Antal skapade fakturor (%s)', args1))
+Bar	<-		ggplot(Daily, aes(x = Monthly, y = Antal, colour = Yearly, group = Yearly)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Månadsvis" ,y = 'Antal', title = sprintf('Antal skapade fakturor (%s)', args1))
+GRAF
+barN		<- file.path( GRAF, "Line.pdf")#
+	pdf( file = barN,#
+	     height = unit(10,"cm"), width = unit(13,"cm"),#
+	     pointsize = 10, colormodel = "rgb", bg = "white")  #
+		print( Line )		#
+	dev.off()
+dev.off()
+barN		<- file.path( GRAF, "Line.pdf")#
+	pdf( file = barN,#
+	     height = unit(10,"cm"), width = unit(13,"cm"),#
+	     pointsize = 10, colormodel = "rgb", bg = "white")  #
+		print( Bar )		#
+	dev.off()
+pdf( file = barN,#
+	     height = unit(8,"cm"), width = unit(10,"cm"),#
+	     pointsize = 10, colormodel = "rgb", bg = "white")  #
+		print( Bar )		#
+	dev.off()
+pdf( file = barN,#
+	     height = unit(6,"cm"), width = unit(8,"cm"),#
+	     pointsize = 10, colormodel = "rgb", bg = "white")  #
+		print( Bar )		#
+	dev.off()
+pdf( file = barN,#
+	     height = unit(6,"cm"), width = unit(10,"cm"),#
+	     pointsize = 10, colormodel = "rgb", bg = "white")  #
+		print( Bar )		#
+	dev.off()
+Daily			<- ErpInvoice[state != 'CLOSED',  .(	Antal 	= .N ), by = .(Bill_date , country)][order(Monthly, country)]
+Daily			<- ErpInvoice[state != 'CLOSED',  .(	Antal 	= .N ), by = .(Bill_date , country)][order(Bill_date, country)]
+Daily
+ggplot(Daily, aes(x = Bill_date, y = Antal, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray()
+ggplot(Daily, aes(x = Bill_date, y = Antal, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Bill_date, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ErpInvoice[, `:=` (Weekly = cut(Bill_date, breaks = 'weeks' )]
+ErpInvoice[, `:=` (Weekly = cut(Bill_date, breaks = 'weeks' ))]
+ErpInvoice
+Daily			<- ErpInvoice[state != 'CLOSED',  .(	Antal 	= .N ), by = .(Weekly , country)][order(Weekly, country)]
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("2 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+y_date_format <- function()#
+{#
+   function(x)#
+   {#
+       m <- format(x,"%b")#
+       d <- format(x,"%a")#
+       ifelse(duplicated(m), d ,paste0(d, "\n", m))#
+   }#
+}
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("2 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+Daily			<- ErpInvoice[state != 'CLOSED',  .(	Antal 	= .N ), by = .(Weekly  =as.Date(Weekly) , country)][order(Weekly, country)]
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("2 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("4 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("8 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+Daily
+y_date_format <- function()#
+{#
+   function(x)#
+   {#
+       y <- format(x,"%Y")#
+       m <- format(x,"%m")#
+       ifelse(duplicated(y), y , m)#
+   }#
+}
+y_date_format <- function()#
+{#
+   function(x)#
+   {#
+       y <- format(x,"%Y")#
+       m <- format(x,"%m")#
+       d	<- format(x, "%d")#
+       ifelse(duplicated(y), y ,paste0(m, "\n", d))#
+   }#
+}
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("8 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+y_date_format <- function()#
+{#
+   function(x)#
+   {#
+       y <- format(x,"%Y")#
+       m <- format(x,"%m")#
+       d	<- format(x, "%d")#
+       ifelse(!duplicated(y), y ,paste0(m, "\n", d))#
+   }#
+}
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("8 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+y_date_format <- function()#
+{#
+   function(x)#
+   {#
+       y <- format(x,"%Y")#
+       m <- format(x,"%b")#
+       d	<- format(x, "%d")#
+       ifelse(!duplicated(y), y ,paste0(m, "\n", d))#
+   }#
+}
+ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("8 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y')
+Week	<-	ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("8 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Veckovis" ,y = 'Antal', title = sprintf('Antal skapade fakturor (%s)', args1))
+Week	<-	ggplot(Daily, aes(x = Weekly, y = Antal, colour = country, group = 1)) +#
+				geom_line( size = 0.95) +#
+				geom_point(size = 1.3) + #
+				scale_y_continuous( breaks = pretty_breaks(6), labels = Format )  +	#
+				scale_x_date(expand = c(0.01,0.01),#
+							breaks = date_breaks("8 week"),#
+							labels = y_date_format()) +#
+				theme_igray() + #
+				scale_colour_tableau("tableau10") +#
+				theme(legend.position = 'bottom') +#
+				GuideCol("Creation year", nrow = 1)	+#
+				facet_wrap( ~ country, ncol = 2, scales = 'free_y') +#
+				labs(x = "Veckovis" ,y = 'Antal', title = sprintf('Antal skapade fakturor (%s)', args1))#
+	barN		<- file.path( GRAF, "weekLine.pdf")#
+	pdf( file = barN,#
+	     height = unit(6,"cm"), width = unit(10,"cm"),#
+	     pointsize = 10, colormodel = "rgb", bg = "white")  #
+		print( Week )		#
+	dev.off()
+dev.off()

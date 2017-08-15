@@ -1,0 +1,406 @@
+% !TEX TS-program = LuaLaTeX
+% !TEX encoding = UTF-8 Unicode
+\documentclass[svgnames, 10pt]{beamer}
+\usepackage{polyglossia}
+\setmainlanguage{english}
+\setotherlanguage{swedish}
+\addto\captionsenglish{\renewcommand{\figurename}{Figur}}
+\addto\captionsenglish{\renewcommand{\contentsname}{Innehållsförteckning}}
+\addto\captionsenglish{\renewcommand{\tablename}{Tabell}}
+\addto\captionsenglish{\renewcommand{\listfigurename}{Figurförteckning}}
+\addto\captionsenglish{\renewcommand{\listtablename}{Tabellförteckning}}
+\usepackage[textfont=small, labelfont=bf,format=hang,%
+	position=top, justification=raggedright,width=.9\textwidth,%
+	indention=-0.5cm, labelformat=parens]{caption}
+\usepackage{csquotes}
+\usepackage{booktabs}
+
+\usepackage{xcolor}
+%\definecolor{gray1}{gray}{0.2}
+\definecolor{darkred}{rgb}{0.545,0,0}
+\definecolor{midnightblue}{rgb}{0.098,0.098,0.439}
+\definecolor{kriitaBlue}{RGB}{0, 68, 91}
+\definecolor{kriitaGreen}{RGB}{44, 171, 102}
+\definecolor{prosaleGrey}{RGB}{153, 153, 153}
+\definecolor{prosaleBalkGrey}{RGB}{229, 229,229}
+
+\definecolor{darkred}{rgb}{0.176,0.23,0.31}
+\definecolor{indianred}{rgb}{0.545,0,0} % Between 0 and 1
+\definecolor{crimson}{RGB}{220,20,60} 
+\definecolor{gray1}{RGB}{3,3,3}
+\definecolor{Pantone}{RGB}{0,84,159} 
+\definecolor{Pantone1}{RGB}{94,182,228} 
+\definecolor{Pantone2}{RGB}{163,219,232} 
+
+
+%% Make color in equations
+\makeatletter
+\let\reftagform@=\tagform@
+\def\tagform@#1{\maketag@@@{(\ignorespaces\textcolor{blue}{#1}\unskip\@@italiccorr)}}
+\renewcommand{\eqref}[1]{\textup{\reftagform@{\ref{#1}}}}
+\makeatother
+\usepackage{hyperref}
+\hypersetup{%
+  breaklinks = {true},
+  colorlinks= {true},
+  linkcolor={midnightblue},
+  citecolor={indianred},
+  urlcolor = {midnightblue},
+  unicode  = {true},
+  bookmarksnumbered = {true},
+  bookmarksopen = {true}
+ }
+
+
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning}
+
+\tikzset{section number/.style={
+    draw=none,
+    rectangle,    
+    left color=kriitaBlue,
+    right color=kriitaBlue!40,
+    minimum size=1.5em,
+    text=white,
+  },
+  section/.style={
+    draw=none,
+    rectangle,    
+    shading=section shading,
+    minimum height=1.5em,
+    minimum width=0.9\textwidth,
+    text width=0.9\textwidth,
+    text=white,
+    align=center
+  }
+}
+
+\usepackage[overlay,absolute]{textpos}
+
+\newcommand\PlaceText[3]{%
+\begin{textblock*}{10in}(#1,#2)  %% change width of box from 10in as you wish
+\textit{#3}
+\end{textblock*}
+}%
+\textblockorigin{-5mm}{0mm}   %% Default origin top left corner and it can be changed in this line
+
+
+
+\newcommand\PlaceTextFirst[3]{%
+\begin{tikzpicture}[remember picture,overlay]
+\node[outer sep=0pt,inner sep=0pt,anchor=south west] 
+  at ([xshift=#1,yshift=-#2]current page.north west) {#3};
+\end{tikzpicture}%
+}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%% Beamer options    
+% Hide navigation symbols
+\setbeamertemplate{navigation symbols}{} 
+\setbeamerfont{title}{shape=\itshape,family=\rmfamily}
+\setbeamercolor{title}{fg=Pantone!80!black,bg=indianred!20!white}
+%\usetheme{Singapore}
+
+\newcommand{\includegraphicsLogo}[2]{\IfFileExists{GRAF/#1}{{GRAF/#1}}{../Logo/lpaylevo1.png}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+% We declare the image that will be used as the logo 100/420*0.25=0.059
+\pgfdeclareimage[width = 0.1\paperwidth]{kriita}{../Logo/logo1}
+%% 1125/1400*0.95
+\IfFileExists{../GRAF/invoice_wc.png}
+{
+\pgfdeclareimage[width = 0.95\paperwidth]{core}{../GRAF/invoice_wc.png}
+} {
+\pgfdeclareimage[width = 0.6\paperwidth]{core}{../Logo/paylevo1.png}
+}
+
+\pgfdeclarehorizontalshading{section shading}{2cm}{
+color(0cm)=(prosaleGrey);
+color(2cm)=(prosaleBalkGrey!7);
+color(3cm)=(prosaleGrey!15)
+}
+
+
+
+
+%Helvetica
+\usepackage{fontspec}
+\setmainfont[Ligatures=TeX]{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+
+
+
+
+\makeatletter
+\setbeamertemplate{section in toc}{
+  \ifnum\the\beamer@tempcount<10 %check to pad with 0
+    \tikz[baseline=-0.5ex]\node[section number]{\,0\inserttocsectionnumber};%
+  \else
+    \tikz[baseline=-0.5ex]\node[section number]{\,\inserttocsectionnumber};%
+  \fi
+  \,%
+  \tikz[baseline=-0.5ex]\node[section]{\inserttocsection};
+}
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TableOfContents subsection, make it square and bg to prosale colour
+\setbeamertemplate{subsection in toc}[square]
+\setbeamercolor{subsection number projected}{bg=kriitaBlue}
+\setbeamerfont{subsection in toc}{%
+  family=\rmfamily,size=\footnotesize%
+ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Headline and frame title appearance 
+  \setbeamertemplate{headline}
+    {%
+    \leavevmode%
+    \hskip20pt
+    \vskip 5pt
+      \hbox{%
+      \begin{beamercolorbox}{section in head}
+       \hskip28pt \insertsubtitle
+	 \hskip170pt
+     \end{beamercolorbox}%
+    }
+}
+
+ \setbeamertemplate{frametitle}
+{
+\vskip4pt 
+	\insertframetitle
+}
+\setbeamerfont{frametitle}{family= \sffamily}
+\setbeamercolor{frametitle}{fg=midnightblue!70}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Footline, where the page number is placed
+\setbeamertemplate{footline}{
+\hskip40pt
+\vskip0pt plus 1fill
+   % \hskip150pt\pgfuseimage{kriita}
+    \hskip330pt (\textcolor{red}{\insertpagenumber}/\insertdocumentendpage)
+        \vskip10pt plus 2filll %% Lowers the graph
+}
+
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Title page
+\institute{\total}
+\subtitle{Invoice table analysis }
+  \setbeamertemplate{title page}
+  {
+  \vskip0pt plus 4fill
+  \hskip0pt
+    \pgfuseimage{core}
+    \vskip0pt plus 1filll
+    \begin{centering}
+      {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle}
+    \end{centering}
+    \vskip0pt plus 1filll
+  }
+  
+
+\newcommand{\textRM}[1]{\textrm{{\scriptsize #1}}}
+\newcommand{\textTM}[1]{\textrm{{\tiny #1}}}
+
+
+  % tkiz ball item
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[circle,ball color=kriitaGreen, shade, 
+ color=white,inner sep=4pt] (char) {\tiny #1};}}
+
+% tkiz rounded item
+\newcommand*\rounded[1]{\tikz[baseline=(char.base)]{
+            \node[draw=none,ball color=kriitaGreen, shade, 
+ color=white, rounded corners=3.5pt, inner sep=6pt] (char) {\scriptsize #1};}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%% Title page options        
+%\title{Analys av data}        
+%\date{\today}    
+%\author[ProSales]{Serdar Akin\\ \href{mailto:serdar.akin@gmail.com}{serdar.akin@gmail.com}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+
+\graphicspath{{../GRAF/}}
+\DeclareGraphicsExtensions{.pdf}
+\usepackage{pdfpages}
+
+
+
+
+\begin{document}
+
+
+ 
+ \begin{frame}  
+   \titlepage
+ \end{frame}
+
+
+\begin{frame}[allowframebreaks]{Table of contents }
+\pdfbookmark[0]{Contents}{toc}
+\tableofcontents{}
+\end{frame}
+
+%% Common options
+\newcommand{\one}{15mm}
+\newcommand{\plotW}{0.55}
+\newcommand{\Space}{25mm}
+
+\section{Introduction}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+\begin{frame}{Purpose}
+
+ \begin{enumerate}
+    \item[\circled{1}] Show data from table ErpInvoice table
+    \end{enumerate}
+
+\end{frame}
+{
+\setbeamercolor{normal text}{bg=kriitaBlue}
+\begin{frame}[plain]
+  \Huge\PlaceTextFirst{10mm}{70mm}{$\textcolor{white}{\textrm{Invoice flow}}$ }
+\end{frame}
+}
+
+
+
+\newcommand{\texting}{Paid invoice flow}
+\subsection{\texting}
+\begin{frame}[allowframebreaks]
+ \frametitle<presentation>{\texting}
+
+ \begin{align}
+ \label{eq:revenue}
+ \textRM{Paid} = \,& \frac{\textRM{NrPaid}}{(\textRM{NrInvoice} -  \textRM{Invoiced})} \\ \notag
+   \textRM{Collection} = \,& \frac{\textRM{NrCollection}}{(\textRM{NrInvoice} -  \textRM{Invoiced})} \\ \notag
+   \textRM{PaidOnTime} = \,& \frac{\sum (\textRM{status == 'PAID' \& reminderFee == 0)}}{(\textRM{NrInvoice} -  \textRM{Invoiced})}
+ \end{align} 
+
+\newpage
+
+
+
+   \begin{columns}[onlytextwidth]
+    \begin{column}{0.7\textwidth}
+      \centering
+      \includegraphics[width=1\linewidth,keepaspectratio=TRUE]{gael_InvoiceProfile.pdf}
+      \vspace{5mm}
+            \includegraphics[width=1\linewidth,keepaspectratio=TRUE]{gael_InvoiceProb.pdf}
+        \end{column}
+    \begin{column}{0.3\textwidth}
+    {\footnotesize
+	\begin{enumerate}[{1)}]
+	\item Table above show the amount of invoice in different states according to equation \eqref{eq:revenue} 
+	\item Table below show the probability that a customer paid on the different states
+	\end{enumerate}
+}
+    \end{column}
+​\end{columns}
+
+
+  
+
+
+\end{frame}
+
+
+{
+\setbeamercolor{normal text}{bg=kriitaBlue}
+\begin{frame}[plain]
+  \Huge\PlaceTextFirst{10mm}{70mm}{$\textcolor{white}{\textrm{Customer value}}$ }
+\end{frame}
+}
+\renewcommand{\texting}{Average income value}
+\subsection{\texting}
+\begin{frame}
+ \frametitle<presentation>{\texting}
+ 
+ 
+
+   \begin{columns}[onlytextwidth]
+    \begin{column}{0.7\textwidth}
+      \centering
+      \includegraphics[width=1\linewidth,keepaspectratio=TRUE]{gael_Quantile.pdf}
+      \vspace{5mm}
+            \includegraphics[width=1\linewidth,keepaspectratio=TRUE]{gael_Summary.pdf}
+        \end{column}
+    \begin{column}{0.3\textwidth}
+    {\footnotesize
+	\begin{enumerate}[{1)}]
+	\item Table above show the customer value by 10\% intervall
+	\item Table below show the mean of customer value/nr of invoices agains its dispersion
+	\end{enumerate}
+}
+    \end{column}
+​\end{columns}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+\renewcommand{\texting}{Total reveneu}
+\subsection{\texting}
+ \begin{frame}
+  \frametitle<presentation>{\texting}
+ 
+
+     \begin{columns}[onlytextwidth]
+    \begin{column}{0.7\textwidth}
+      \centering
+      \includegraphics[width=1\linewidth,keepaspectratio=TRUE]{gael_TotalIncome.pdf}
+        \end{column}
+    \begin{column}{0.3\textwidth}
+        {\footnotesize
+	\begin{enumerate}[{1)}]
+		\item Shows the total customer revenue by different income's
+	\end{enumerate}
+}
+    \end{column}
+​\end{columns}
+
+
+ \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+\renewcommand{\texting}{xy}
+\subsection{\texting}
+ \begin{frame}
+  \frametitle<presentation>{\texting}
+ 
+
+     \begin{columns}[onlytextwidth]
+    \begin{column}{0.7\textwidth}
+      \centering
+      \includegraphics[width=1\linewidth,keepaspectratio=TRUE]{gael_InvoiceTurnOver}
+        \end{column}
+    \begin{column}{0.3\textwidth}
+        {\footnotesize
+	\begin{enumerate}[{1)}]
+		\item Shows the difference between one time invoice customer agains repeteade
+	\end{enumerate}
+}
+    \end{column}
+​\end{columns}
+
+
+ \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+
+
+\end{document}
